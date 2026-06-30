@@ -22,8 +22,8 @@ contract EduPayChain {
     }
 
     struct Payment {
-        uint256 id;
-        string nim;
+        // [FIX #1] NIM di-hash (keccak256) untuk menjaga privasi mahasiswa (UU PDP)
+        bytes32 nimHash;
         string semester;
         uint256 amount;
         string proofHash;
@@ -33,13 +33,16 @@ contract EduPayChain {
 
     mapping(uint256 => Payment) public payments;
 
+    // Index pembayaran per mahasiswa agar front-end bisa query by wallet
+    mapping(address => uint256[]) public studentPayments;
+
     // =========================
     // EVENTS
     // =========================
 
     event PaymentSubmitted(
         uint256 indexed paymentId,
-        string nim,
+        bytes32 indexed nimHash, // hash NIM, bukan plaintext
         uint256 amount,
         address indexed student
     );
@@ -56,23 +59,27 @@ contract EduPayChain {
     // STUDENT
     // =========================
 
+    // [FIX #2] external + calldata: lebih hemat gas dari public + memory
     function submitPayment(
-        string memory _nim,
-        string memory _semester,
+        string calldata _nim,
+        string calldata _semester,
         uint256 _amount,
-        string memory _proofHash
-    ) public {
+        string calldata _proofHash
+    ) external {
 
         require(bytes(_nim).length > 0, "NIM is required");
         require(bytes(_semester).length > 0, "Semester is required");
         require(_amount > 0, "Amount must be greater than zero");
-        require(bytes(_proofHash).length > 0, "Proof hash is required");
+        // [FIX #3] Validasi panjang CID IPFS minimum (CIDv0 = 46 karakter, CIDv1 >= 59)
+        require(bytes(_proofHash).length >= 46, "Invalid IPFS CID: too short");
+
+        // [FIX #1] Hash NIM sebelum disimpan on-chain
+        bytes32 nimHash = keccak256(abi.encodePacked(_nim));
 
         paymentCount++;
 
         payments[paymentCount] = Payment({
-            id: paymentCount,
-            nim: _nim,
+            nimHash: nimHash,
             semester: _semester,
             amount: _amount,
             proofHash: _proofHash,
@@ -80,9 +87,12 @@ contract EduPayChain {
             status: Status.Pending
         });
 
+        // Simpan ID transaksi ke index mahasiswa
+        studentPayments[msg.sender].push(paymentCount);
+
         emit PaymentSubmitted(
             paymentCount,
-            _nim,
+            nimHash,
             _amount,
             msg.sender
         );
@@ -92,8 +102,9 @@ contract EduPayChain {
     // ADMIN
     // =========================
 
+    // [FIX #2] public -> external
     function verifyPayment(uint256 _id)
-        public
+        external
         onlyAdmin
     {
         require(_id > 0 && _id <= paymentCount, "Payment not found");
@@ -108,8 +119,9 @@ contract EduPayChain {
         emit PaymentVerified(_id);
     }
 
+    // [FIX #2] public -> external
     function rejectPayment(uint256 _id)
-        public
+        external
         onlyAdmin
     {
         require(_id > 0 && _id <= paymentCount, "Payment not found");
@@ -128,8 +140,9 @@ contract EduPayChain {
     // READ
     // =========================
 
+    // [FIX #2] public -> external
     function checkStatus(uint256 _id)
-        public
+        external
         view
         returns (Status)
     {
@@ -138,11 +151,12 @@ contract EduPayChain {
         return payments[_id].status;
     }
 
+    // [FIX #2] public -> external; storage pointer lebih efisien dari memory copy
     function getPayment(uint256 _id)
-        public
+        external
         view
         returns (
-            string memory nim,
+            bytes32 nimHash, // [FIX #1] return hash, bukan NIM asli
             string memory semester,
             uint256 amount,
             string memory proofHash,
@@ -152,15 +166,24 @@ contract EduPayChain {
     {
         require(_id > 0 && _id <= paymentCount, "Payment not found");
 
-        Payment memory p = payments[_id];
+        Payment storage p = payments[_id]; // storage pointer, tidak copy ke memory
 
         return (
-            p.nim,
+            p.nimHash,
             p.semester,
             p.amount,
             p.proofHash,
             p.student,
             p.status
         );
+    }
+
+    // Fungsi tambahan: ambil semua Payment ID milik satu mahasiswa (untuk front-end)
+    function getStudentPayments(address _student)
+        external
+        view
+        returns (uint256[] memory)
+    {
+        return studentPayments[_student];
     }
 }
