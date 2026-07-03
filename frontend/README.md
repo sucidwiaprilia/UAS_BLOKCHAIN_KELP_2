@@ -1,16 +1,72 @@
-# React + Vite
+# EduPayChain — Frontend Architecture & UI/UX Documentation
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+[![GitHub Repository](https://img.shields.io/badge/GitHub-UAS__BLOKCHAIN__KELP__2-4F46E5?style=for-the-badge&logo=github)](https://github.com/sucidwiaprilia/UAS_BLOKCHAIN_KELP_2)
+[![React Version](https://img.shields.io/badge/React-19.2.7-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
+[![Vite Build](https://img.shields.io/badge/Vite-8.1.1-646CFF?style=for-the-badge&logo=vite)](https://vitejs.dev/)
 
-Currently, two official plugins are available:
+Modul ini berisi antarmuka pengguna (*Frontend*) untuk DApp **EduPayChain**, sistem verifikasi pembayaran UKT terdesentralisasi yang dikembangkan oleh **Kelompok 2**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+🔗 **Repositoy GitHub:** [https://github.com/sucidwiaprilia/UAS_BLOKCHAIN_KELP_2](https://github.com/sucidwiaprilia/UAS_BLOKCHAIN_KELP_2)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## ⚡ Fitur Utama Frontend
 
-## Expanding the Oxlint configuration
+- **Blazing Fast Vite Build & Code-Splitting:**  
+  Menggunakan `React.lazy()` dan `Suspense` untuk memecah berkas halaman secara dinamis. Bundel utama berada di bawah batas optimal 500 kB, menjamin waktu muat super cepat.
+- **Glassmorphic & Premium UI Aesthetics:**  
+  Desain antarmuka berkelas dengan palet warna biru-indigo modern, gradien halus, efek kaca (*glassmorphism*), dan animasi konfeti saat pembayaran terverifikasi.
+- **Segmented Interactive Navbar:**  
+  Navigasi berbentuk kapsul (*pills*) dengan tombol kembali eksplisit (**← Beranda**) di setiap halaman.
+- **Ethers.js v6 Web3 Service Layer:**  
+  Lapisan abstraksi `BlockchainService` yang bersinggungan langsung dengan dompet **MetaMask** dan Smart Contract Ethereum Sepolia.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+---
+
+## 📦 Panduan Instalasi & Menjalankan Frontend
+
+1. **Masuk ke direktori frontend:**
+   ```bash
+   cd frontend
+   ```
+
+2. **Pasang seluruh dependensi NPM:**
+   ```bash
+   npm install
+   ```
+
+3. **Jalankan server pengembangan (*Development Server*):**
+   ```bash
+   npm run dev
+   ```
+   Aplikasi akan berjalan di `http://localhost:5173`.
+
+4. **Verifikasi Kualitas Kode & Build Produksi:**
+   ```bash
+   npm run lint
+   npm run build
+   ```
+
+---
+
+## 🏗️ Struktur Folder `src/`
+
+```
+src/
+├── config/
+│   └── contract.js          # Konfigurasi alamat Smart Contract, ABI, & Mock Data
+├── services/
+│   └── blockchainService.js # Abstraksi komunikasi Ethers.js v6 & MetaMask
+├── context/
+│   └── Web3Context.jsx      # Global State Management (Wallet, Transactions, Alerts)
+├── utils/
+│   └── formatters.js        # Fungsi pemformatan ETH/IDR, IPFS Gateway URL, & waktu
+├── components/
+│   ├── Navbar.jsx           # Navigasi utama bergaya Segmented Pills modern
+│   └── IpfsProofModal.jsx   # Modal pratinjau bukti bayar (JPG/PNG/PDF) ergonomis
+└── pages/
+    ├── LandingPage.jsx      # Halaman utama & panduan 3 langkah
+    ├── StudentPage.jsx      # Portal mahasiswa untuk submit pembayaran UKT
+    ├── AdminPage.jsx        # Portal verifikasi & penolakan oleh Pihak Sekolah
+    └── PublicVerifyPage.jsx # Portal audit independen tanpa login
+```

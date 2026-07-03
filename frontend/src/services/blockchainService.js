@@ -10,6 +10,17 @@ export class BlockchainService {
     return typeof window !== 'undefined' && Boolean(window.ethereum);
   }
 
+  /**
+   * Cek apakah error merupakan penolakan/pembatalan oleh pengguna di MetaMask (Ethers v6/v5 compatible)
+   */
+  static isUserRejection(err) {
+    if (!err) return false;
+    if (err.code === 'ACTION_REJECTED' || err.code === 4001) return true;
+    if (err?.info?.error?.code === 4001) return true;
+    const msg = (err.message || err.reason || '').toLowerCase();
+    return msg.includes('rejected') || msg.includes('denied') || msg.includes('user cancelled');
+  }
+
   static async connectBrowserProvider() {
     if (!this.hasEthereumProvider()) {
       throw new Error('MetaMask not found in browser');
@@ -41,11 +52,20 @@ export class BlockchainService {
     return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
   }
 
+  static async getContractAdmin() {
+    if (!this.hasEthereumProvider()) return null;
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+      return await contract.admin();
+    } catch (e) {
+      console.warn('Gagal membaca admin dari smart contract:', e);
+      return null;
+    }
+  }
+
   /**
    * Submit a payment record to the smart contract.
-   * NOTE: amountEth is stored as a uint256 (wei) in the contract — it's a
-   * record of the payment amount, NOT an actual ETH transfer (contract is not payable).
-   * This matches EduPayChain.sol where submitPayment() is external, not payable.
    */
   static async submitPaymentOnChain(nim, semester, amountEth, proofHash) {
     const contract = await this.getContractWithSigner();
@@ -56,7 +76,31 @@ export class BlockchainService {
 
     const tx = await contract.submitPayment(nim, semester, amountWei, proofHash);
     const receipt = await tx.wait();
-    return receipt;
+
+    // Coba parsing event log PaymentSubmitted dari receipt Ethers v6
+    let parsedEvent = null;
+    try {
+      for (const log of receipt.logs) {
+        try {
+          const parsed = contract.interface.parseLog(log);
+          if (parsed && parsed.name === 'PaymentSubmitted') {
+            parsedEvent = {
+              paymentId: Number(parsed.args.paymentId),
+              nimHash: parsed.args.nimHash,
+              amount: ethers.formatEther(parsed.args.amount),
+              student: parsed.args.student
+            };
+            break;
+          }
+        } catch {
+          // Abaikan log dari kontrak lain
+        }
+      }
+    } catch (e) {
+      console.warn('Gagal memparsing event log PaymentSubmitted:', e);
+    }
+
+    return { receipt, parsedEvent };
   }
 
   static async verifyPaymentOnChain(paymentId) {
@@ -75,7 +119,6 @@ export class BlockchainService {
 
   /**
    * Listens for MetaMask account and chain changes and calls the provided callback.
-   * Returns a cleanup function to remove the listeners.
    */
   static listenForAccountChanges(onAccountChange, onChainChange) {
     if (!this.hasEthereumProvider()) return () => {};

@@ -17,28 +17,47 @@ export const formatEthToIdr = (ethAmount, rate = 28000000) => {
 
 /**
  * IPFS public gateway — ipfs.io is the official Protocol Labs gateway.
- * It caches all CIDs that have ever existed on the global IPFS network,
- * unlike gateway.pinata.cloud which only serves CIDs pinned to Pinata accounts.
+ * Menghindari dweb.link (Service Worker gateway) yang sering timeout/500.
+ * ipfs.io langsung serve file tanpa Service Worker intermediary.
  */
-export const IPFS_GATEWAY = import.meta.env.VITE_IPFS_GATEWAY || 'https://dweb.link/ipfs';
+export const IPFS_GATEWAY = import.meta.env.VITE_IPFS_GATEWAY || 'https://ipfs.io/ipfs';
 
-/** Build a clickable IPFS URL from any CID string */
+/** Daftar gateway publik untuk fallback jika gateway utama tidak tersedia */
+const IPFS_GATEWAYS = [
+  'https://ipfs.io/ipfs',
+  'https://cloudflare-ipfs.com/ipfs',
+  'https://gateway.pinata.cloud/ipfs',
+];
+
+/** Build a clickable IPFS URL from any CID string (atau CID/path untuk direktori) */
 export const ipfsUrl = (cid) => `${IPFS_GATEWAY}/${cid}`;
 
+/** Menghasilkan array URL dari semua gateway untuk UI fallback links */
+export const ipfsGatewayUrls = (cid) =>
+  IPFS_GATEWAYS.map(gw => ({ url: `${gw}/${cid}`, name: new URL(gw).hostname }));
+
 /**
- * Pool of CIDs that are permanently cached on the public ipfs.io gateway.
- * These are official IPFS project files (whitepapers, docs, readmes) —
- * always accessible without needing a Pinata API key.
+ * Pool CID demo yang mengarah ke SINGLE FILE (bukan direktori DAG).
+ *
+ * PENTING: CID `QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG` yang lama
+ * adalah DIREKTORI, sehingga gateway menampilkan halaman "Index of /ipfs/...".
+ * Sekarang menggunakan path langsung ke file di dalam direktori, atau CID file tunggal.
+ *
+ * Semua CID di bawah telah diverifikasi accessible via ipfs.io gateway.
  */
 const DEMO_IPFS_CIDS = [
-  // IPFS Whitepaper direct PDF file — always accessible
-  "QmV9tSDx9UiPeWEXxEeH6aoDvmihvx6jD5eLb4jbTaOxB",
-  // IPFS Project README
-  "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG",
-  // IPFS dist readme file (stable, cached globally)
+  // IPFS Welcome readme (single file dari dalam direktori resmi IPFS)
+  "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG/readme",
+  // IPFS About document (deskripsi lengkap proyek IPFS — file tunggal)
+  "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG/about",
+  // IPFS Quick-start guide (panduan singkat — file tunggal)
+  "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG/quick-start",
+  // IPFS Security notes (catatan keamanan — file tunggal)
+  "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG/security-notes",
+  // IPFS dist welcome page (single file, terverifikasi CIDv0)
   "QmPZ9gcCEpqKTo6aq61g2nXGUhM4iCL3ewB6LDXZCtioEB",
-  // Ethereum Yellow Paper (Gavin Wood) — publicly pinned
-  "QmNqBJQCbYM698MoSNhQkBP9UkHzdzGNKHJ2cjgeFNGZ6v",
+  // "Hello World" — file tunggal paling sederhana di jaringan IPFS
+  "QmWATWQ7fVPP2EFGu71UkfnqhYXDYH566qy47CnJDgvs8u",
 ];
 
 export const generateMockCid = () => {

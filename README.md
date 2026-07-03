@@ -1,50 +1,73 @@
-# Remix IDE Blank Template
+# EduPayChain — Sistem Pembayaran UKT Terdesentralisasi (UAS Blockchain Kelompok 2)
 
-Welcome to your new **Remix IDE Blank Workspace**!
+[![GitHub Repository](https://img.shields.io/badge/GitHub-UAS__BLOKCHAIN__KELP__2-4F46E5?logo=github)](https://github.com/sucidwiaprilia/UAS_BLOKCHAIN_KELP_2)
+[![Smart Contract Network](https://img.shields.io/badge/Network-Sepolia%20Testnet-059669?logo=ethereum)](https://sepolia.etherscan.io/)
+[![Clean Architecture](https://img.shields.io/badge/Architecture-Clean%20%26%20Modular-0369A1)](#arsitektur-proyek)
 
-This workspace has been generated using the "Blank Template" option in Remix IDE. It starts with only minimal configuration files, giving you full control to build your project from scratch.
+**EduPayChain** adalah portal pembayaran Uang Kuliah Tunggal (UKT) berbasis blockchain dan penyimpanan terenkripsi IPFS. Proyek ini dibangun untuk memenuhi Tugas Akhir (UAS) mata kuliah Blockchain oleh **Kelompok 2**.
 
----
-
-## What's Included?
-
-- **`remix.config.json`**: Default Remix IDE workspace configuration.
-- **`.prettierrc.json`**: Basic Prettier formatting rules for code consistency.
-
-No contract files, folders, or sample code are included.
+🔗 **Link Repositori Resmi:** [https://github.com/sucidwiaprilia/UAS_BLOKCHAIN_KELP_2](https://github.com/sucidwiaprilia/UAS_BLOKCHAIN_KELP_2)
 
 ---
 
-## Getting Started
+## ✨ Fitur Utama
 
-1. **Create Files & Folders**
+1. **Student Portal (Mahasiswa):**
+   - Mengisi form pembayaran UKT (NIM, Semester, Jumlah IDR/ETH).
+   - Mengunggah berkas bukti transaksi secara otomatis terenkripsi dan disimpan permanen di jaringan **IPFS**.
+   - Pelacakan riwayat pembayaran (*Pending, Verified, Rejected*) secara *real-time*.
 
-   - Add new Solidity files, scripts, or folders as needed for your project.
-   - You can organize your workspace structure in any way you like.
+2. **Admin Portal (Pihak Sekolah):**
+   - Dilengkapi proteksi **Role-Based Access Control (RBAC)** on-chain. Hanya dompet digital otorisasi sekolah yang dapat memverifikasi atau menolak pembayaran.
+   - Dasbor pemantauan analitik (*Total, Pending, Verified, Rejected Assets*).
 
-2. **Setup Project Settings** (Optional)
-
-   - Modify `remix.config.json` or add additional configuration files as your project grows.
-
-3. **Write & Compile Smart Contracts**
-
-   - Use the **Solidity Compiler** and **Deploy & Run Transactions** plugins (available in Remix IDE's left sidebar) to develop and test your contracts.
-
-4. **(Optional) Initialize Git**
-
-   - If you checked "Initialize as a Git repository" during workspace creation, you can start committing your code immediately.
+3. **Public Verification Portal:**
+   - Portal penelusuran publik independen berdasarkan Payment ID (`#1`, `#2`), NIM, atau Hash transaksi.
+   - Memastikan transparansi penuh dan auditabilitas tanpa perantara.
 
 ---
 
-## Useful Resources
+## 🏗️ Arsitektur Proyek (*Clean Architecture*)
 
-- [Remix IDE Documentation](https://remix-ide.readthedocs.io/)
-- [Solidity Language Documentation](https://docs.soliditylang.org/)
-- [Remix IDE Community Forum](https://forum.remix.ethereum.org/)
+Proyek ini dipisahkan menjadi lapisan modular yang bersih dan efisien:
+
+```
+frontend/src/
+├── config/        # Konfigurasi Smart Contract & ABI (contract.js)
+├── services/      # Lapisan Infrastruktur Blockchain & Ethers.js v6 (blockchainService.js)
+├── context/       # State Management & React Context API (Web3Context.jsx)
+├── utils/         # Fungsi Utilitas Murni & Formatters (formatters.js)
+├── components/    # Komponen UI Reusable (Navbar.jsx, IpfsProofModal.jsx)
+└── pages/         # Lazy-loaded Page Bundles (LandingPage, StudentPage, AdminPage, PublicVerifyPage)
+```
 
 ---
 
-Happy coding! 🚀 
+## 🚀 Cara Menjalankan Proyek Secara Lokal
 
-_Remix IDE Team_
+1. **Kloning Repositori:**
+   ```bash
+   git clone https://github.com/sucidwiaprilia/UAS_BLOKCHAIN_KELP_2.git
+   cd UAS_BlockChain_Kelompok2/frontend
+   ```
 
+2. **Install Dependensi:**
+   ```bash
+   npm install
+   ```
+
+3. **Jalankan Server Pengembangan:**
+   ```bash
+   npm run dev
+   ```
+
+4. **Verifikasi Kualitas Kode (Linter & Build):**
+   ```bash
+   npm run lint
+   npm run build
+   ```
+
+---
+
+## 👥 Kontributor — Kelompok 2
+* **Suci Dwi Aprilia** (Repository Owner) & Tim Kelompok 2

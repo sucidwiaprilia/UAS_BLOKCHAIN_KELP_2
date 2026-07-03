@@ -3,21 +3,25 @@ import { useWeb3 } from '../context/Web3Context';
 import { 
   CreditCard, 
   History, 
-  ShieldCheck, 
   Plus, 
   CloudUpload, 
   Lock, 
   ExternalLink,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Shield,
+  XCircle,
+  ArrowLeft
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { ipfsUrl, getNextDueDate } from '../utils/formatters';
+import { getNextDueDate } from '../utils/formatters';
+import IpfsProofModal from '../components/IpfsProofModal';
 
-export default function StudentPage() {
-  const { account, payments, submitNewPayment, loading } = useWeb3();
+export default function StudentPage({ setActiveTab }) {
+  const { account, isDemoMode, payments, submitNewPayment, loading } = useWeb3();
   const [activeSubTab, setActiveSubTab] = useState('form'); // 'form' | 'history'
+  const [selectedProofPayment, setSelectedProofPayment] = useState(null);
 
   // Form State
   const [nim, setNim] = useState('21040120');
@@ -25,12 +29,17 @@ export default function StudentPage() {
   const [amountIdrInput, setAmountIdrInput] = useState('12500000');
   const [fileName, setFileName] = useState(null);
   const [fileDataUrl, setFileDataUrl] = useState(null);
-  const [submittedSuccess, setSubmittedSuccess] = useState(false);
-  const [lastSubmitted, setLastSubmitted] = useState(null);
+  const [submissionResult, setSubmissionResult] = useState(null); // { status: 'success' | 'error', data?, message? }
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      // Batasi maksimal 1.5MB untuk mencegah QuotaExceededError di browser localStorage
+      if (file.size > 1.5 * 1024 * 1024) {
+        alert('Ukuran file melebihi batas maksimal 1.5MB! Harap pilih file atau kompres dokumen terlebih dahulu.');
+        e.target.value = null;
+        return;
+      }
       setFileName(file.name);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -55,26 +64,28 @@ export default function StudentPage() {
       semester,
       amountEth: calculatedEth,
       amountIdrDirect: formattedIdr,
-      file: fileName,
       fileDataUrl
     });
 
-    setLastSubmitted(res);
-    setSubmittedSuccess(true);
-    
-    // Confetti celebration
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
+    if (!res) return;
+
+    setSubmissionResult(res);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (res.status === 'success') {
+      confetti({
+        particleCount: 100,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+    }
   };
 
   // Filter payments for the currently connected account.
-  // Falls back to all demo payments when in demo mode (account === null).
-  const myPayments = account
+  // Falls back to all demo payments when in demo mode.
+  const myPayments = (!isDemoMode && account)
     ? payments.filter(p => p.student.toLowerCase() === account.toLowerCase())
-    : payments.filter(p => p.student === '0xDemoMode' || p.student.startsWith('0x71C8'));
+    : payments;
 
   return (
     <div style={{ display: 'flex', minHeight: 'calc(100vh - 65px)', background: 'var(--bg-page)' }}>
@@ -183,9 +194,167 @@ export default function StudentPage() {
 
       {/* Main Content */}
       <main style={{ flex: 1, padding: '2.5rem 3.5rem', maxWidth: '1200px' }}>
-        {/* Header Title + Due date */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem' }}>
+        {submissionResult ? (
+          submissionResult.status === 'success' || submissionResult.data ? (
+            /* Dedicated Official Receipt Page (Recommendation 2 - Success) */
+            <div className="animate-fade-in" style={{ maxWidth: '820px', margin: '0 auto' }}>
+              <div style={{ marginBottom: '2rem' }}>
+                <button
+                  onClick={() => { setSubmissionResult(null); setActiveSubTab('form'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem' }}
+                >
+                  <ArrowLeft size={16} /> Kembali ke Form Pembayaran
+                </button>
+              </div>
+
+              <div className="card-soft" style={{ padding: '3.5rem', borderRadius: '24px', background: 'white', border: '2px solid #A7F3D0', boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.15)' }}>
+                <div style={{ textAlign: 'center', marginBottom: '2.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '2.5rem' }}>
+                  <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#D1FAE5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 0 0 8px #ECFDF5' }}>
+                    <CheckCircle2 size={46} />
+                  </div>
+                  <div style={{ display: 'inline-block', background: '#D1FAE5', color: '#065F46', padding: '4px 14px', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.5px', marginBottom: '1rem' }}>
+                    TRANSAKSI ON-CHAIN BERHASIL
+                  </div>
+                  <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.8rem' }}>
+                    Resi Pembayaran & Sertifikat IPFS
+                  </h1>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', maxWidth: '580px', margin: '0 auto', lineHeight: '1.6' }}>
+                    Uang Kuliah Tunggal (UKT) Anda telah dicatat dalam buku besar terdesentralisasi Ethereum Sepolia dan berkas dikunci secara permanen di IPFS.
+                  </p>
+                </div>
+
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '18px', padding: '2rem', marginBottom: '2.5rem' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Shield size={18} color="var(--primary)" /> Parameter Verifikasi Kriptografis
+                  </h3>
+                  <div style={{ display: 'grid', gap: '1.2rem', fontSize: '0.95rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed #CBD5E1', paddingBottom: '0.8rem' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Payment ID On-Chain:</span>
+                      <span className="mono" style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--primary)' }}>#{submissionResult.data?.id || 'NEW'}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed #CBD5E1', paddingBottom: '0.8rem' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Status Smart Contract:</span>
+                      <span style={{ background: '#FEF3C7', color: '#D97706', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 700 }}>
+                        PENDING VERIFICATION (Pihak Sekolah)
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed #CBD5E1', paddingBottom: '0.8rem' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>NIM & Semester:</span>
+                      <span style={{ fontWeight: 700 }}>{submissionResult.data?.nim} ({submissionResult.data?.semester})</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed #CBD5E1', paddingBottom: '0.8rem' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>NIM Hash (Privasi UU PDP):</span>
+                      <code style={{ background: '#EEF2FF', color: 'var(--primary)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        {submissionResult.data?.nimHash || '-'}
+                      </code>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px dashed #CBD5E1', paddingBottom: '0.8rem' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>Nominal Pembayaran:</span>
+                      <span style={{ fontWeight: 800, color: '#059669', fontSize: '1.1rem' }}>
+                        {submissionResult.data?.amountIdr} <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>({submissionResult.data?.amountEth} ETH)</span>
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>IPFS Content Identifier (CID):</span>
+                      <button
+                        onClick={() => setSelectedProofPayment(submissionResult.data)}
+                        style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', color: 'var(--primary)', padding: '6px 12px', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}
+                      >
+                        {submissionResult.data?.proofHash ? `${submissionResult.data.proofHash.substring(0, 18)}...` : 'Lihat CID'} <ExternalLink size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                  <button
+                    onClick={() => { setSubmissionResult(null); setActiveSubTab('history'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="btn-primary"
+                    style={{ padding: '0.9rem 2.2rem', fontSize: '1rem' }}
+                  >
+                    <History size={18} />
+                    Lihat Riwayat Pembayaran
+                  </button>
+                  <button
+                    onClick={() => { setSubmissionResult(null); setActiveSubTab('form'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="btn-secondary"
+                    style={{ padding: '0.9rem 2.2rem', fontSize: '1rem' }}
+                  >
+                    Bayar Semester Lainnya
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Dedicated Error / Rejection Page (Recommendation 2 - Failure) */
+            <div className="animate-fade-in" style={{ maxWidth: '720px', margin: '0 auto' }}>
+              <div style={{ marginBottom: '2rem' }}>
+                <button
+                  onClick={() => { setSubmissionResult(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem' }}
+                >
+                  <ArrowLeft size={16} /> Kembali ke Form Pembayaran
+                </button>
+              </div>
+
+              <div className="card-soft" style={{ padding: '3.5rem', borderRadius: '24px', background: 'white', border: '2px solid #FECACA', boxShadow: '0 25px 50px -12px rgba(220, 38, 38, 0.15)', textAlign: 'center' }}>
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 0 0 8px #FEF2F2' }}>
+                  <XCircle size={46} />
+                </div>
+                <div style={{ display: 'inline-block', background: '#FEE2E2', color: '#991B1B', padding: '4px 14px', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.5px', marginBottom: '1rem' }}>
+                  TRANSAKSI DIBATALKAN / GAGAL
+                </div>
+                <h1 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#991B1B', marginBottom: '1rem' }}>
+                  Pembayaran Tidak Tercatat
+                </h1>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', maxWidth: '540px', margin: '0 auto 2rem', lineHeight: '1.6' }}>
+                  Proses pencatatan transaksi UKT Anda ke smart contract Ethereum mengalami gangguan atau dibatalkan oleh pengguna.
+                </p>
+
+                <div style={{ background: '#FFF1F2', border: '1px solid #FFE4E6', borderRadius: '16px', padding: '1.5rem', color: '#BE123C', fontSize: '0.95rem', fontWeight: 600, marginBottom: '2.5rem', textAlign: 'left' }}>
+                  <div style={{ fontWeight: 800, marginBottom: '6px' }}>Detail Keterangan:</div>
+                  <div>{submissionResult.message || 'Transaksi dibatalkan oleh pengguna di dalam dompet digital MetaMask atau terjadi gangguan koneksi jaringan Sepolia.'}</div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                  <button
+                    onClick={() => { setSubmissionResult(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="btn-primary"
+                    style={{ padding: '0.9rem 2.5rem', fontSize: '1rem', background: '#DC2626' }}
+                  >
+                    Coba Kirim Ulang Sekarang
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        ) : (
+          <>
+            {/* Header Title + Due date */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
+            {setActiveTab && (
+              <button
+                onClick={() => setActiveTab('landing')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#F1F5F9',
+                  border: '1px solid #CBD5E1',
+                  color: '#334155',
+                  padding: '5px 12px',
+                  borderRadius: '9999px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  marginBottom: '1rem',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <ArrowLeft size={14} /> Kembali ke Beranda
+              </button>
+            )}
             <h1 style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.4rem', letterSpacing: '-0.5px' }}>
               Student Portal
             </h1>
@@ -252,75 +421,9 @@ export default function StudentPage() {
         </div>
 
         {activeSubTab === 'form' ? (
-          submittedSuccess ? (
-            /* Success View */
-            <div className="card-soft animate-fade-in" style={{ padding: '3rem', textAlign: 'center', maxWidth: '700px', margin: '0 auto' }}>
-              <div style={{
-                width: '72px',
-                height: '72px',
-                borderRadius: '50%',
-                background: '#D1FAE5',
-                color: '#059669',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1.5rem'
-              }}>
-                <CheckCircle2 size={40} />
-              </div>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '0.5rem' }}>
-                Pembayaran UKT Berhasil Dikirim!
-              </h2>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-                Transaksi Anda telah dicatat di smart contract EduPayChain dan file bukti bayar dienkripsi ke IPFS.
-              </p>
-
-              <div style={{ background: '#F8F9FF', border: '1px solid var(--border)', borderRadius: '16px', padding: '1.5rem', textAlign: 'left', marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Payment ID:</span>
-                  <span className="mono" style={{ fontWeight: 700 }}>#{lastSubmitted?.id}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Status On-Chain:</span>
-                  <span style={{ background: '#FEF3C7', color: '#D97706', padding: '2px 10px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
-                    PENDING REVIEW
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>NIM Hash (Privasi UU PDP):</span>
-                  <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
-                    {lastSubmitted?.nimHash.substring(0, 16)}...
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>IPFS CID Proof:</span>
-                  <span className="mono" style={{ fontSize: '0.8rem' }}>
-                    {lastSubmitted?.proofHash.substring(0, 16)}...
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                <button
-                  onClick={() => setActiveSubTab('history')}
-                  className="btn-primary"
-                  style={{ padding: '0.75rem 2rem' }}
-                >
-                  Lihat Riwayat Pembayaran
-                </button>
-                <button
-                  onClick={() => setSubmittedSuccess(false)}
-                  className="btn-secondary"
-                  style={{ padding: '0.75rem 2rem' }}
-                >
-                  Bayar Semester Lainnya
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Form Layout matching Student Portal.png */
-            <div style={{ display: 'grid', gridTemplateColumns: '7fr 4fr', gap: '2.5rem' }}>
-              {/* Left Form Box */}
+          /* Form Layout matching Student Portal.png */
+          <div style={{ display: 'grid', gridTemplateColumns: '7fr 4fr', gap: '2.5rem' }}>
+            {/* Left Form Box */}
               <form onSubmit={handleSubmit} className="card-soft" style={{ padding: '2.5rem' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                   <div>
@@ -504,19 +607,18 @@ export default function StudentPage() {
                 </div>
               </div>
             </div>
-          )
         ) : (
           /* History View */
           <div className="card-soft animate-fade-in" style={{ overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
-                <tr style={{ background: '#F8F9FF', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>PAYMENT ID</th>
-                  <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>SEMESTER</th>
-                  <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>NOMINAL</th>
-                  <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>NIM HASH (PRIVACY)</th>
-                  <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>STATUS</th>
-                  <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>PROOF CID</th>
+                <tr style={{ background: '#F8F9FF', borderBottom: '2px solid #E5E7EB' }}>
+                  <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', width: '100px', letterSpacing: '0.5px' }}>PAYMENT ID</th>
+                  <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>SEMESTER</th>
+                  <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>NOMINAL</th>
+                  <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>NIM HASH (PRIVACY)</th>
+                  <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>STATUS</th>
+                  <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>PROOF CID</th>
                 </tr>
               </thead>
               <tbody>
@@ -528,43 +630,51 @@ export default function StudentPage() {
                   </tr>
                 ) : (
                   myPayments.map((p) => (
-                    <tr key={p.id} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                      <td className="mono" style={{ padding: '1.2rem 1.5rem', fontWeight: 700 }}>#{p.id}</td>
-                      <td style={{ padding: '1.2rem 1.5rem', fontWeight: 600 }}>{p.semester}</td>
-                      <td style={{ padding: '1.2rem 1.5rem' }}>
-                        <span style={{ fontWeight: 700 }}>{p.amountEth} ETH</span>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{p.amountIdr}</div>
+                    <tr key={p.id} style={{ borderBottom: '1px solid #E5E7EB' }}>
+                      <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <span className="mono" style={{ background: '#F1F5F9', color: '#334155', padding: '5px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '0.85rem', display: 'inline-block' }}>
+                          #{String(p.id).padStart(3, '0')}
+                        </span>
                       </td>
-                      <td className="mono" style={{ padding: '1.2rem 1.5rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                        {p.nimHash.substring(0, 14)}...
+                      <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <span style={{ background: '#EFF6FF', color: '#1E40AF', padding: '5px 14px', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', border: '1px solid #BFDBFE', display: 'inline-block' }}>
+                          {p.semester}
+                        </span>
                       </td>
-                      <td style={{ padding: '1.2rem 1.5rem' }}>
+                      <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1F293B', marginBottom: '2px' }}>{p.amountIdr}</div>
+                        <div style={{ fontSize: '0.78rem', color: '#6B7280', fontWeight: 600 }}>({p.amountEth} ETH)</div>
+                      </td>
+                      <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <span className="mono" style={{ color: '#4F46E5', fontWeight: 700, fontSize: '0.88rem', background: '#EEF2FF', padding: '4px 10px', borderRadius: '8px', border: '1px solid #C7D2FE' }}>
+                          {p.nimHash.substring(0, 14)}...
+                        </span>
+                      </td>
+                      <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                         {p.status === 0 && (
-                          <span style={{ background: '#FEF3C7', color: '#D97706', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Clock size={13} /> Pending
+                          <span style={{ background: '#FEF3C7', color: '#D97706', padding: '6px 14px', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '5px', border: '1px solid #FDE68A' }}>
+                            <Clock size={14} /> Pending
                           </span>
                         )}
                         {p.status === 1 && (
-                          <span style={{ background: '#D1FAE5', color: '#059669', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <CheckCircle2 size={13} /> Verified
+                          <span style={{ background: '#D1FAE5', color: '#059669', padding: '6px 14px', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '5px', border: '1px solid #A7F3D0' }}>
+                            <CheckCircle2 size={14} /> Verified
                           </span>
                         )}
                         {p.status === 2 && (
-                          <span style={{ background: '#FEE2E2', color: '#DC2626', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <AlertCircle size={13} /> Rejected
+                          <span style={{ background: '#FEE2E2', color: '#DC2626', padding: '6px 14px', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '5px', border: '1px solid #FECACA' }}>
+                            <AlertCircle size={14} /> Rejected
                           </span>
                         )}
                       </td>
-                      <td style={{ padding: '1.2rem 1.5rem' }}>
-                        <a 
-                          href={ipfsUrl(p.proofHash)} 
-                          target="_blank" 
-                          rel="noreferrer"
+                      <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <button 
+                          onClick={() => setSelectedProofPayment(p)}
                           className="mono"
-                          style={{ color: 'var(--primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
+                          style={{ background: '#F8F9FF', border: '1px solid #C7D2FE', color: '#4F46E5', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', padding: '6px 12px', borderRadius: '8px', fontWeight: 700 }}
                         >
                           {p.proofHash.substring(0, 8)}... <ExternalLink size={13} />
-                        </a>
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -573,7 +683,15 @@ export default function StudentPage() {
             </table>
           </div>
         )}
+          </>
+        )}
       </main>
+
+      <IpfsProofModal 
+        isOpen={Boolean(selectedProofPayment)} 
+        onClose={() => setSelectedProofPayment(null)} 
+        payment={selectedProofPayment} 
+      />
     </div>
   );
 }

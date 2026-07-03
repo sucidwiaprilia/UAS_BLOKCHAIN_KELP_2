@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWeb3 } from '../context/Web3Context';
-import { ipfsUrl } from '../utils/formatters';
+import IpfsProofModal from '../components/IpfsProofModal';
 import { 
   CreditCard, 
   History, 
@@ -9,21 +9,22 @@ import {
   RefreshCw, 
   Search, 
   CheckCircle2, 
-  Clock, 
   AlertCircle,
   X,
   FileText,
   TrendingUp,
-  Loader2
+  Loader2,
+  ArrowLeft
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export default function AdminPage() {
-  const { payments, verifyPaymentRecord, rejectPaymentRecord, loading, txStatus } = useWeb3();
+export default function AdminPage({ setActiveTab }) {
+  const { payments, verifyPaymentRecord, rejectPaymentRecord, loading, txStatus, account, isAuthorizedAdmin, isDemoMode } = useWeb3();
   const [activeSubTab, setActiveSubTab] = useState('payments'); // 'payments' | 'history' | 'verification'
   const [filterStatus, setFilterStatus] = useState('All'); // 'All' | 'Pending' | 'Verified' | 'Rejected' | 'Live MetaMask'
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTx, setSelectedTx] = useState(null);
+  const [selectedProofPayment, setSelectedProofPayment] = useState(null);
 
   const filteredPayments = payments.filter(p => {
     if (activeSubTab === 'verification' && p.status !== 0) return false;
@@ -56,153 +57,86 @@ export default function AdminPage() {
   const verifiedCount = payments.filter(p => p.status === 1).length;
   const rejectedCount = payments.filter(p => p.status === 2).length;
 
-  return (
-    <div style={{ display: 'flex', minHeight: 'calc(100vh - 65px)', background: 'var(--bg-page)' }}>
-      {/* Left Sidebar matching Admin Dashboard.png */}
-      <aside style={{
-        width: '260px',
-        background: 'white',
-        borderRight: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: '1.5rem 1rem'
-      }}>
-        <div>
-          {/* User Profile Badge */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.8rem',
-            padding: '0.5rem 0.8rem',
-            marginBottom: '2rem'
-          }}>
-            <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '50%',
-              background: '#EEF2FF',
-              color: 'var(--primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-              fontSize: '1rem'
-            }}>
-              <ShieldCheck size={22} />
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)' }}>EduPay Portal</div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#059669', letterSpacing: '0.5px' }}>VERIFIED ADMIN</div>
-            </div>
+  if (!isDemoMode && account && !isAuthorizedAdmin) {
+    return (
+      <div style={{ minHeight: 'calc(100vh - 65px)', background: 'var(--bg-page)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div className="card-soft" style={{ maxWidth: '540px', padding: '3rem', textAlign: 'center', borderRadius: '24px', border: '2px solid #FECACA', background: 'white', boxShadow: '0 20px 40px -15px rgba(220, 38, 38, 0.15)' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+            <AlertCircle size={32} />
           </div>
-
-          {/* Nav Items */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-            <button
-              onClick={() => { setActiveSubTab('payments'); setFilterStatus('All'); }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.8rem',
-                padding: '0.75rem 1rem',
-                borderRadius: '12px',
-                background: activeSubTab === 'payments' ? '#EEF2FF' : 'transparent',
-                color: activeSubTab === 'payments' ? 'var(--primary)' : 'var(--text-secondary)',
-                fontWeight: activeSubTab === 'payments' ? 600 : 400,
-                border: 'none',
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontSize: '0.92rem',
-                transition: 'all 0.2s'
-              }}
-            >
-              <CreditCard size={18} />
-              All Payments ({payments.length})
-            </button>
-
-            <button
-              onClick={() => { setActiveSubTab('verification'); setFilterStatus('Pending'); }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.75rem 1rem',
-                borderRadius: '12px',
-                background: activeSubTab === 'verification' ? '#EEF2FF' : 'transparent',
-                color: activeSubTab === 'verification' ? 'var(--primary)' : 'var(--text-secondary)',
-                fontWeight: activeSubTab === 'verification' ? 600 : 400,
-                border: 'none',
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontSize: '0.92rem',
-                transition: 'all 0.2s'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                <ShieldCheck size={18} />
-                Needs Verification
-              </div>
-              {pendingCount > 0 && (
-                <span style={{ background: '#FEF3C7', color: '#D97706', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700 }}>
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => { setActiveSubTab('history'); setFilterStatus('Verified'); }}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.8rem',
-                padding: '0.75rem 1rem',
-                borderRadius: '12px',
-                background: activeSubTab === 'history' ? '#EEF2FF' : 'transparent',
-                color: activeSubTab === 'history' ? 'var(--primary)' : 'var(--text-secondary)',
-                fontWeight: activeSubTab === 'history' ? 600 : 400,
-                border: 'none',
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontSize: '0.92rem',
-                transition: 'all 0.2s'
-              }}
-            >
-              <History size={18} />
-              Verified History
-            </button>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#991B1B', marginBottom: '0.8rem' }}>
+            Akses Admin Ditolak (403)
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.02rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+            Halaman Dasbor Admin dilindungi oleh otorisasi Smart Contract Ethereum. Wallet yang Anda hubungkan saat ini (<code style={{ background: '#F1F5F9', padding: '2px 6px', borderRadius: '6px', fontSize: '0.85rem' }}>{account}</code>) tidak terdaftar sebagai <strong>Pihak Sekolah (Contract Admin)</strong>.
+          </p>
+          <div style={{ background: '#FFFBEB', border: '1px solid #FEF08A', padding: '1rem', borderRadius: '12px', fontSize: '0.88rem', color: '#B45309', fontWeight: 600 }}>
+            Silakan ganti akun MetaMask Anda ke alamat resmi Pihak Sekolah atau putuskan koneksi wallet untuk kembali ke Mode Demo interaktif.
           </div>
         </div>
-      </aside>
+      </div>
+    );
+  }
 
-      {/* Main Content */}
-      <main style={{ flex: 1, padding: '2.5rem 3.5rem', maxWidth: '1250px' }}>
-        {/* Top Title & Actions */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+  return (
+    <div style={{ minHeight: 'calc(100vh - 65px)', background: 'var(--bg-page)' }}>
+      {/* Main Content (Full Width, Centered, Proportional & Responsive) */}
+      <main style={{ width: '100%', maxWidth: '1360px', margin: '0 auto', padding: '2.5rem 2.5rem' }}>
+        {/* Top Title & Actions Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2.5rem' }}>
           <div>
-            <h1 style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '0.4rem' }}>
-              {activeSubTab === 'verification' ? 'Pending Verifications' : activeSubTab === 'history' ? 'Verified History' : 'Admin Dashboard'}
-            </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem' }}>
-              Monitor, audit, and verify blockchain-secured student UKT payments.
+            {setActiveTab && (
+              <button
+                onClick={() => setActiveTab('landing')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#F1F5F9',
+                  border: '1px solid #CBD5E1',
+                  color: '#334155',
+                  padding: '5px 12px',
+                  borderRadius: '9999px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  marginBottom: '1rem',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <ArrowLeft size={14} /> Kembali ke Beranda
+              </button>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.5rem' }}>
+              <h1 style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--primary)', margin: 0 }}>
+                {activeSubTab === 'verification' ? 'Pending Verifications' : activeSubTab === 'history' ? 'Verified History' : 'Admin Dashboard'}
+              </h1>
+              <span style={{ background: '#D1FAE5', color: '#059669', padding: '4px 12px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 800, border: '1px solid #A7F3D0', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <ShieldCheck size={14} /> VERIFIED ADMIN
+              </span>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', margin: 0 }}>
+              Monitor, audit, and verify blockchain-secured student UKT payments cleanly without side clutter.
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <button 
               onClick={() => alert("Mengekspor laporan verifikasi transaksi UKT ke PDF...")}
               style={{
                 background: 'white',
                 border: '1px solid var(--border)',
-                padding: '0.65rem 1.25rem',
+                padding: '0.7rem 1.4rem',
                 borderRadius: '9999px',
-                fontWeight: 600,
+                fontWeight: 700,
                 color: 'var(--text-main)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '0.6rem',
                 cursor: 'pointer',
-                boxShadow: 'var(--shadow-sm)'
+                boxShadow: 'var(--shadow-sm)',
+                fontSize: '0.9rem',
+                transition: 'all 0.2s'
               }}
             >
               <Download size={16} style={{ color: 'var(--primary)' }} />
@@ -210,19 +144,20 @@ export default function AdminPage() {
             </button>
 
             <button 
-              onClick={() => { setFilterStatus('All'); setSearchTerm(''); }}
+              onClick={() => { setActiveSubTab('payments'); setFilterStatus('All'); setSearchTerm(''); }}
               style={{
                 background: 'white',
                 border: '1px solid var(--border)',
-                width: '42px',
-                height: '42px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'var(--primary)',
                 cursor: 'pointer',
-                boxShadow: 'var(--shadow-sm)'
+                boxShadow: 'var(--shadow-sm)',
+                transition: 'all 0.2s'
               }}
               title="Refresh / Reset Filter"
             >
@@ -231,124 +166,166 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* 4 Metric Cards */}
+        {/* 4 Interactive Metric Cards (Replaces Left Sidebar Navigation) */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: '1.5rem',
           marginBottom: '2.5rem'
         }}>
-          {/* Card 1 */}
+          {/* Card 1: Total */}
           <div 
             onClick={() => { setActiveSubTab('payments'); setFilterStatus('All'); }}
-            className="card-soft" 
-            style={{ padding: '1.6rem', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: filterStatus === 'All' ? '2px solid var(--primary)' : '1px solid var(--border)' }}
+            className="card-soft"
+            style={{
+              padding: '1.6rem',
+              borderRadius: '20px',
+              background: filterStatus === 'All' ? '#EEF2FF' : 'white',
+              border: filterStatus === 'All' ? '2px solid #4F46E5' : '1px solid var(--border)',
+              boxShadow: filterStatus === 'All' ? '0 10px 25px -5px rgba(79, 70, 229, 0.15)' : 'var(--shadow-sm)',
+              position: 'relative',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
           >
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>
-              TOTAL TRANSACTIONS
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: filterStatus === 'All' ? '#4F46E5' : 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                TOTAL TRANSACTIONS
+              </div>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: filterStatus === 'All' ? '#4F46E5' : '#EEF2FF', color: filterStatus === 'All' ? 'white' : '#4F46E5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CreditCard size={18} />
+              </div>
             </div>
-            <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '2.6rem', fontWeight: 900, color: '#1E293B', marginBottom: '0.4rem', lineHeight: 1 }}>
               {payments.length}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', color: '#059669', fontWeight: 600 }}>
-              <TrendingUp size={14} /> +12.5% vs last month
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', color: '#059669', fontWeight: 700 }}>
+              <TrendingUp size={15} /> +12.5% vs last month
             </div>
           </div>
 
-          {/* Card 2 */}
+          {/* Card 2: Pending */}
           <div 
             onClick={() => { setActiveSubTab('verification'); setFilterStatus('Pending'); }}
             style={{
-              background: '#FEFCE8',
-              border: filterStatus === 'Pending' ? '2px solid #D97706' : '1px solid #FEF08A',
-              borderRadius: '20px',
               padding: '1.6rem',
+              borderRadius: '20px',
+              background: filterStatus === 'Pending' ? '#FEFCE8' : '#FFFBEB',
+              border: filterStatus === 'Pending' ? '2px solid #D97706' : '1px solid #FEF08A',
+              boxShadow: filterStatus === 'Pending' ? '0 10px 25px -5px rgba(217, 119, 6, 0.15)' : 'var(--shadow-sm)',
               position: 'relative',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.2s'
             }}
           >
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#A16207', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>
-              PENDING REVIEW
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#B45309', letterSpacing: '0.5px' }}>
+                PENDING REVIEW
+              </div>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: filterStatus === 'Pending' ? '#D97706' : '#FEF3C7', color: filterStatus === 'Pending' ? 'white' : '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ShieldCheck size={18} />
+              </div>
             </div>
-            <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#D97706', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '2.6rem', fontWeight: 900, color: '#D97706', marginBottom: '0.4rem', lineHeight: 1 }}>
               {pendingCount}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#A16207', fontWeight: 500 }}>
+            <div style={{ fontSize: '0.82rem', color: '#B45309', fontWeight: 700 }}>
               Click to verify pending items
             </div>
           </div>
 
-          {/* Card 3 */}
+          {/* Card 3: Verified */}
           <div 
             onClick={() => { setActiveSubTab('history'); setFilterStatus('Verified'); }}
             style={{
-              background: '#ECFDF5',
-              border: filterStatus === 'Verified' ? '2px solid #059669' : '1px solid #A7F3D0',
-              borderRadius: '20px',
               padding: '1.6rem',
+              borderRadius: '20px',
+              background: filterStatus === 'Verified' ? '#ECFDF5' : '#F0FDF4',
+              border: filterStatus === 'Verified' ? '2px solid #059669' : '1px solid #A7F3D0',
+              boxShadow: filterStatus === 'Verified' ? '0 10px 25px -5px rgba(5, 150, 105, 0.15)' : 'var(--shadow-sm)',
               position: 'relative',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.2s'
             }}
           >
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#047857', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>
-              VERIFIED ASSETS
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#047857', letterSpacing: '0.5px' }}>
+                VERIFIED ASSETS
+              </div>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: filterStatus === 'Verified' ? '#059669' : '#D1FAE5', color: filterStatus === 'Verified' ? 'white' : '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <History size={18} />
+              </div>
             </div>
-            <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#059669', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '2.6rem', fontWeight: 900, color: '#059669', marginBottom: '0.4rem', lineHeight: 1 }}>
               {verifiedCount}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#047857', fontWeight: 500 }}>
-              Secured on IPFS
+            <div style={{ fontSize: '0.82rem', color: '#047857', fontWeight: 700 }}>
+              Secured on IPFS & Blockchain
             </div>
           </div>
 
-          {/* Card 4 */}
+          {/* Card 4: Rejected */}
           <div 
-            onClick={() => setFilterStatus('Rejected')}
+            onClick={() => { setActiveSubTab('payments'); setFilterStatus('Rejected'); }}
             style={{
-              background: '#FEF2F2',
-              border: filterStatus === 'Rejected' ? '2px solid #DC2626' : '1px solid #FECACA',
-              borderRadius: '20px',
               padding: '1.6rem',
+              borderRadius: '20px',
+              background: filterStatus === 'Rejected' ? '#FEF2F2' : '#FFF1F2',
+              border: filterStatus === 'Rejected' ? '2px solid #DC2626' : '1px solid #FECACA',
+              boxShadow: filterStatus === 'Rejected' ? '0 10px 25px -5px rgba(220, 38, 38, 0.15)' : 'var(--shadow-sm)',
               position: 'relative',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              transition: 'all 0.2s'
             }}
           >
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#B91C1C', letterSpacing: '0.5px', marginBottom: '0.5rem' }}>
-              FLAGGED/REJECTED
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#991B1B', letterSpacing: '0.5px' }}>
+                FLAGGED / REJECTED
+              </div>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: filterStatus === 'Rejected' ? '#DC2626' : '#FEE2E2', color: filterStatus === 'Rejected' ? 'white' : '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AlertCircle size={18} />
+              </div>
             </div>
-            <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#DC2626', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '2.6rem', fontWeight: 900, color: '#DC2626', marginBottom: '0.4rem', lineHeight: 1 }}>
               {rejectedCount}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#B91C1C', fontWeight: 500 }}>
+            <div style={{ fontSize: '0.82rem', color: '#991B1B', fontWeight: 700 }}>
               Disputed transactions
             </div>
           </div>
         </div>
 
-        {/* Filter and Search Bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        {/* Filter Pills and Responsive Search Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
           {/* Status Pills */}
           <div style={{
             background: '#EFF4FF',
-            padding: '4px',
+            padding: '6px',
             borderRadius: '9999px',
             display: 'flex',
-            gap: '4px'
+            flexWrap: 'wrap',
+            gap: '6px',
+            border: '1px solid #E0E7FF'
           }}>
             {['All', 'Pending', 'Verified', 'Rejected', 'Live MetaMask'].map((status) => (
               <button
                 key={status}
-                onClick={() => { setFilterStatus(status); if(status==='Pending') setActiveSubTab('verification'); }}
+                onClick={() => { 
+                  setFilterStatus(status); 
+                  if (status === 'Pending') setActiveSubTab('verification');
+                  else if (status === 'Verified') setActiveSubTab('history');
+                  else setActiveSubTab('payments');
+                }}
                 style={{
-                  background: filterStatus === status ? 'white' : 'transparent',
-                  color: filterStatus === status ? 'var(--primary)' : 'var(--text-secondary)',
-                  fontWeight: filterStatus === status ? 700 : 500,
-                  padding: '0.5rem 1.4rem',
+                  background: filterStatus === status ? 'var(--primary)' : 'transparent',
+                  color: filterStatus === status ? 'white' : '#4F46E5',
+                  fontWeight: filterStatus === status ? 800 : 600,
+                  padding: '0.55rem 1.5rem',
                   borderRadius: '9999px',
                   border: 'none',
                   cursor: 'pointer',
                   fontSize: '0.88rem',
-                  boxShadow: filterStatus === status ? 'var(--shadow-sm)' : 'none',
+                  boxShadow: filterStatus === status ? '0 4px 12px rgba(79, 70, 229, 0.3)' : 'none',
                   transition: 'all 0.2s'
                 }}
               >
@@ -358,8 +335,8 @@ export default function AdminPage() {
           </div>
 
           {/* Search Input */}
-          <div style={{ position: 'relative', width: '320px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+          <div style={{ position: 'relative', width: '340px', maxWidth: '100%' }}>
+            <Search size={18} style={{ position: 'absolute', left: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
             <input
               type="text"
               placeholder="Search by NIM Hash or Semester..."
@@ -367,13 +344,15 @@ export default function AdminPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
                 width: '100%',
-                padding: '0.7rem 1rem 0.7rem 2.8rem',
+                padding: '0.75rem 1rem 0.75rem 3rem',
                 borderRadius: '9999px',
-                border: '1px solid var(--border)',
+                border: '1px solid #CBD5E1',
                 background: 'white',
                 fontSize: '0.9rem',
+                fontWeight: 500,
                 outline: 'none',
-                boxShadow: 'var(--shadow-sm)'
+                boxShadow: 'var(--shadow-sm)',
+                transition: 'border 0.2s'
               }}
             />
           </div>
@@ -383,13 +362,13 @@ export default function AdminPage() {
         <div className="card-soft" style={{ overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr style={{ background: '#F8F9FF', borderBottom: '1px solid var(--border)' }}>
-                <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>#</th>
-                <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>NIM HASH</th>
-                <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>SEMESTER</th>
-                <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>NOMINAL</th>
-                <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>STATUS</th>
-                <th style={{ padding: '1.2rem 1.5rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>ACTION</th>
+              <tr style={{ background: '#F8F9FF', borderBottom: '2px solid #E5E7EB' }}>
+                <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', width: '70px', letterSpacing: '0.5px' }}>NO</th>
+                <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>NIM HASH</th>
+                <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>SEMESTER</th>
+                <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>NOMINAL</th>
+                <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>STATUS</th>
+                <th style={{ padding: '1.1rem 1.4rem', fontSize: '0.78rem', fontWeight: 800, color: '#4B5563', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>ACTION</th>
               </tr>
             </thead>
             <tbody>
@@ -401,70 +380,85 @@ export default function AdminPage() {
                 </tr>
               ) : (
                 filteredPayments.map((p) => (
-                  <tr key={p.id} style={{ borderBottom: '1px solid #F3F4F6', transition: 'background 0.15s' }}>
-                    <td className="mono" style={{ padding: '1.2rem 1.5rem', fontWeight: 700 }}>{p.id < 10 ? `00${p.id}` : p.id}</td>
-                    <td className="mono" style={{ padding: '1.2rem 1.5rem', color: 'var(--primary)', fontWeight: 600, fontSize: '0.9rem' }}>
-                      {p.nimHash.substring(0, 16)}...
-                      {p.isRealTx ? (
-                        <span style={{ background: '#EEF2FF', color: 'var(--primary)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 800, marginLeft: '8px' }}>⚡ LIVE</span>
-                      ) : (
-                        <span style={{ background: '#F1F5F9', color: '#64748B', padding: '2px 6px', borderRadius: '6px', fontSize: '0.7rem', marginLeft: '8px' }}>📋 DEMO</span>
-                      )}
+                  <tr key={p.id} style={{ borderBottom: '1px solid #E5E7EB', transition: 'background 0.15s' }}>
+                    <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap', width: '70px' }}>
+                      <span className="mono" style={{ background: '#F1F5F9', color: '#334155', padding: '5px 12px', borderRadius: '8px', fontWeight: 800, fontSize: '0.85rem', display: 'inline-block' }}>
+                        #{String(p.id).padStart(3, '0')}
+                      </span>
                     </td>
-                    <td style={{ padding: '1.2rem 1.5rem', fontWeight: 600 }}>{p.semester}</td>
-                    <td style={{ padding: '1.2rem 1.5rem' }}>
-                      <span style={{ fontWeight: 700 }}>{p.amountIdr}</span>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>({p.amountEth} ETH)</div>
+                    <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+                        <span className="mono" style={{ color: '#4F46E5', fontWeight: 700, fontSize: '0.88rem', background: '#EEF2FF', padding: '4px 10px', borderRadius: '8px', border: '1px solid #C7D2FE' }}>
+                          {p.nimHash.substring(0, 14)}...
+                        </span>
+                        {p.isRealTx ? (
+                          <span style={{ background: '#D1FAE5', color: '#059669', padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800, border: '1px solid #A7F3D0' }}>⚡ LIVE</span>
+                        ) : (
+                          <span style={{ background: '#F1F5F9', color: '#475569', padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800, border: '1px solid #CBD5E1' }}>📋 DEMO</span>
+                        )}
+                      </div>
                     </td>
-                    <td style={{ padding: '1.2rem 1.5rem' }}>
+                    <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                      <span style={{ background: '#EFF6FF', color: '#1E40AF', padding: '5px 14px', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', border: '1px solid #BFDBFE', display: 'inline-block' }}>
+                        {p.semester}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1F293B', marginBottom: '2px' }}>{p.amountIdr}</div>
+                      <div style={{ fontSize: '0.78rem', color: '#6B7280', fontWeight: 600 }}>({p.amountEth} ETH)</div>
+                    </td>
+                    <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                       {p.status === 0 && (
-                        <span style={{ background: '#FEF3C7', color: '#D97706', padding: '4px 14px', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#D97706' }} /> Pending
+                        <span style={{ background: '#FEF3C7', color: '#D97706', padding: '6px 14px', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1px solid #FDE68A' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#D97706' }} /> Pending
                         </span>
                       )}
                       {p.status === 1 && (
-                        <span style={{ background: '#D1FAE5', color: '#059669', padding: '4px 14px', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#059669' }} /> Verified
+                        <span style={{ background: '#D1FAE5', color: '#059669', padding: '6px 14px', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1px solid #A7F3D0' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#059669' }} /> Verified
                         </span>
                       )}
                       {p.status === 2 && (
-                        <span style={{ background: '#FEE2E2', color: '#DC2626', padding: '4px 14px', borderRadius: '9999px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#DC2626' }} /> Rejected
+                        <span style={{ background: '#FEE2E2', color: '#DC2626', padding: '6px 14px', borderRadius: '9999px', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px', border: '1px solid #FECACA' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#DC2626' }} /> Rejected
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '1.2rem 1.5rem', display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-                      <button
-                        onClick={() => setSelectedTx(p)}
-                        className="btn-secondary"
-                        style={{ padding: '0.4rem 0.9rem', fontSize: '0.82rem' }}
-                      >
-                        Detail
-                      </button>
-
-                      {p.status === 0 && (
+                    <td style={{ padding: '1.2rem 1.4rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
                         <button
-                          onClick={() => handleVerify(p.id)}
-                          disabled={loading}
-                          style={{
-                            background: '#059669',
-                            color: 'white',
-                            border: 'none',
-                            padding: '0.4rem 0.8rem',
-                            borderRadius: '8px',
-                            fontWeight: 700,
-                            fontSize: '0.8rem',
-                            cursor: loading ? 'wait' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                          title="Klik untuk langsung verifikasi"
+                          onClick={() => setSelectedTx(p)}
+                          className="btn-secondary"
+                          style={{ padding: '0.45rem 1.1rem', fontSize: '0.82rem', fontWeight: 700, borderRadius: '8px' }}
                         >
-                          {loading && txStatus === 'pending' ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
-                          Verify
+                          Detail
                         </button>
-                      )}
+
+                        {p.status === 0 && (
+                          <button
+                            onClick={() => handleVerify(p.id)}
+                            disabled={loading}
+                            style={{
+                              background: '#059669',
+                              color: 'white',
+                              border: 'none',
+                              padding: '0.45rem 1.2rem',
+                              borderRadius: '8px',
+                              fontWeight: 800,
+                              fontSize: '0.82rem',
+                              cursor: loading ? 'wait' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)'
+                            }}
+                            title="Klik untuk langsung verifikasi"
+                          >
+                            {loading && txStatus === 'pending' ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                            Verify
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -578,15 +572,13 @@ export default function AdminPage() {
 
               <div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>BUKTI BAYAR IPFS CID</div>
-                <a
-                  href={ipfsUrl(selectedTx.proofHash)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  onClick={() => setSelectedProofPayment(selectedTx)}
                   className="mono"
-                  style={{ fontSize: '0.82rem', color: 'var(--primary)', fontWeight: 600, display: 'inline-block', marginTop: '4px' }}
+                  style={{ background: 'transparent', border: 'none', fontSize: '0.82rem', color: 'var(--primary)', fontWeight: 600, display: 'inline-block', marginTop: '4px', cursor: 'pointer', padding: 0 }}
                 >
-                  {selectedTx.proofHash} ↗
-                </a>
+                  {selectedTx.proofHash} ↗ (Buka Viewer IPFS)
+                </button>
 
                 {/* Visual Bank Receipt / Slip Preview */}
                 <div style={{ marginTop: '1.2rem', padding: '1rem', background: '#F8F9FF', border: '1px solid var(--border)', borderRadius: '12px' }}>
@@ -702,6 +694,12 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      <IpfsProofModal
+        isOpen={Boolean(selectedProofPayment)}
+        onClose={() => setSelectedProofPayment(null)}
+        payment={selectedProofPayment}
+      />
     </div>
   );
 }

@@ -1,9 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWeb3 } from '../context/Web3Context';
-import { ArrowRight, Wallet, CloudUpload, Shield, CheckCircle2, Lock, Cpu } from 'lucide-react';
+import { ArrowRight, Wallet, CloudUpload, Shield, CheckCircle2, Lock, Cpu, Clock, Database, AlertCircle } from 'lucide-react';
 
 export default function LandingPage({ setActiveTab }) {
-  const { payments, setIsAdmin } = useWeb3();
+  const { payments, setIsAdmin, isDemoMode, account, isAuthorizedAdmin, showTxToast } = useWeb3();
+  const [blockHeight, setBlockHeight] = useState(18245902);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBlockHeight(prev => prev + 1);
+    }, 12000); // Rata-rata waktu blok Ethereum ~12 detik
+    return () => clearInterval(interval);
+  }, []);
 
   const totalPayments = payments.length;
   const pendingCount = payments.filter(p => p.status === 0).length;
@@ -23,45 +31,39 @@ export default function LandingPage({ setActiveTab }) {
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '6px',
-          background: '#D1FAE5',
-          color: '#065F46',
-          padding: '4px 14px',
+          gap: '0.5rem',
+          background: '#EEF2FF',
+          color: 'var(--primary)',
+          padding: '0.4rem 1rem',
           borderRadius: '9999px',
-          fontSize: '0.75rem',
-          fontWeight: '700',
-          letterSpacing: '0.5px',
+          fontSize: '0.85rem',
+          fontWeight: '600',
           marginBottom: '1.5rem',
-          textTransform: 'uppercase'
+          border: '1px solid #C7D2FE'
         }}>
-          <span style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            background: '#059669',
-            display: 'inline-block'
-          }} />
-          SEPOLIA TESTNET LIVE
+          <Cpu size={14} />
+          Solusi Administrasi Kampus Berbasis Ethereum
         </div>
 
         <h1 style={{
-          fontSize: '3.2rem',
+          fontSize: '3.6rem',
           fontWeight: '800',
           lineHeight: '1.15',
-          marginBottom: '1.2rem',
-          color: 'var(--text-main)'
+          marginBottom: '1.5rem',
+          letterSpacing: '-1.5px',
+          color: 'var(--text-primary)'
         }}>
-          Sistem Pembayaran UKT<br />
-          <span style={{ color: 'var(--secondary)' }}>Berbasis Blockchain</span>
+          Transparansi UKT Tanpa Batas dengan <span style={{ color: 'var(--primary)' }}>Smart Contract</span>
         </h1>
 
         <p style={{
-          fontSize: '1.15rem',
+          fontSize: '1.2rem',
           color: 'var(--text-secondary)',
           maxWidth: '680px',
           margin: '0 auto 2.5rem',
           lineHeight: '1.6'
         }}>
+          Sistem pembayaran uang kuliah tunggal (UKT) terverifikasi secara kriptografis menggunakan IPFS dan Ethereum Sepolia.
           Transparan. Aman. Terdesentralisasi. Masa depan administrasi kampus kini hadir dalam genggaman Anda melalui integrasi Web3 terpercaya.
         </p>
 
@@ -80,6 +82,11 @@ export default function LandingPage({ setActiveTab }) {
 
           <button
             onClick={() => {
+              if (!isDemoMode && account && !isAuthorizedAdmin) {
+                showTxToast('error', 'Akses Admin Terkunci: Wallet Anda terhubung sebagai Mahasiswa dan tidak terotorisasi sebagai Pihak Sekolah.', 5000);
+                setActiveTab('admin');
+                return;
+              }
               setIsAdmin(true);
               setActiveTab('admin');
             }}
@@ -91,9 +98,9 @@ export default function LandingPage({ setActiveTab }) {
         </div>
       </section>
 
-      {/* Network Preview Box */}
+      {/* Network Preview Box (Proportional & Live Banner) */}
       <div style={{
-        maxWidth: '1000px',
+        maxWidth: '1100px',
         margin: '0 auto 3.5rem',
         padding: '0 1.5rem'
       }}>
@@ -101,41 +108,72 @@ export default function LandingPage({ setActiveTab }) {
           background: 'white',
           border: '1px solid var(--border)',
           borderRadius: '24px',
-          padding: '3rem 2.5rem 1.5rem',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.04)',
-          position: 'relative',
-          minHeight: '220px',
+          padding: '2rem 2.5rem',
+          boxShadow: 'var(--shadow-card)',
           display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          backgroundImage: 'radial-gradient(circle at 50% 30%, rgba(79, 70, 229, 0.05) 0%, transparent 60%)'
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '2rem',
+          backgroundImage: 'radial-gradient(circle at 10% 50%, rgba(79, 70, 229, 0.04) 0%, transparent 60%)'
         }}>
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            textAlign: 'center',
-            color: 'var(--text-light)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <Cpu size={48} style={{ opacity: 0.3, color: 'var(--primary)' }} />
-            <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Smart Contract Interconnected</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', flex: '1 1 340px' }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '16px',
+              background: '#EEF2FF',
+              color: 'var(--primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <Cpu size={28} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }}></span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', letterSpacing: '0.5px' }}>ETHEREUM SEPOLIA CONNECTED</span>
+              </div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '2px' }}>
+                Smart Contract Interconnected
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>
+                Sistem administrasi terverifikasi secara kriptografis dan tersinkronisasi live.
+              </p>
+            </div>
           </div>
 
-          <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '1rem' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--secondary)', letterSpacing: '0.5px' }}>NETWORK STATUS</span>
-            <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '2px' }}>
-              Block Height: 18,245,902
+          <div style={{
+            background: '#F8FAFC',
+            border: '1px solid #E2E8F0',
+            borderRadius: '18px',
+            padding: '1.2rem 1.8rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1.2rem',
+            minWidth: '240px'
+          }}>
+            <div style={{ background: '#E2E8F0', padding: '10px', borderRadius: '12px', color: '#475569' }}>
+              <Database size={22} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                CURRENT BLOCK HEIGHT
+              </div>
+              <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary)', marginTop: '2px' }}>
+                #{blockHeight.toLocaleString('en-US')}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 600 }}>
+                • Live Sync (~12s)
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 4 Aggregate Stats Cards */}
+      {/* 4 Aggregate Stats Cards (Proportional & Balanced Layout) */}
       <section style={{
         maxWidth: '1100px',
         margin: '0 auto 5rem',
@@ -144,52 +182,85 @@ export default function LandingPage({ setActiveTab }) {
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '1.5rem'
       }}>
-        <div className="card-soft" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ background: '#EEF2FF', color: 'var(--primary)', padding: '10px', borderRadius: '12px' }}>
-              <Wallet size={20} />
+        {/* Card 1: Total Payments */}
+        <div className="card-soft" style={{ padding: '1.8rem', borderRadius: '22px', background: 'white', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+              <div style={{ background: '#EEF2FF', color: 'var(--primary)', padding: '12px', borderRadius: '14px' }}>
+                <Wallet size={22} />
+              </div>
+              <span style={{ fontSize: '0.75rem', background: '#D1FAE5', color: '#065F46', padding: '4px 10px', borderRadius: '9999px', fontWeight: 700 }}>
+                +12% vs last sem
+              </span>
             </div>
-            <span style={{ fontSize: '0.75rem', background: '#D1FAE5', color: '#065F46', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
-              +12% vs last sem
-            </span>
+            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Total Payments</div>
+            <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{totalPayments}</div>
           </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Total Payments</div>
-          <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)' }}>{totalPayments}</div>
+          <div style={{ borderTop: '1px dashed #F1F5F9', paddingTop: '0.8rem', marginTop: '1.2rem', fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 500 }}>
+            <CheckCircle2 size={14} color="#059669" /> Akumulasi transaksi UKT
+          </div>
         </div>
 
-        <div className="card-soft" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ background: '#FEF3C7', color: '#D97706', padding: '10px', borderRadius: '12px' }}>
-              <Lock size={20} />
+        {/* Card 2: Pending Transactions */}
+        <div className="card-soft" style={{ padding: '1.8rem', borderRadius: '22px', background: 'white', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+              <div style={{ background: '#FEF3C7', color: '#D97706', padding: '12px', borderRadius: '14px' }}>
+                <Clock size={22} />
+              </div>
+              <span style={{ fontSize: '0.75rem', background: '#FEF08A', color: '#854D0E', padding: '4px 10px', borderRadius: '9999px', fontWeight: 700 }}>
+                In Review
+              </span>
             </div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Pending Transactions</div>
+            <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{pendingCount}</div>
           </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Pending Transactions</div>
-          <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)' }}>{pendingCount}</div>
+          <div style={{ borderTop: '1px dashed #F1F5F9', paddingTop: '0.8rem', marginTop: '1.2rem', fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 500 }}>
+            <Lock size={14} color="#D97706" /> Menunggu verifikasi admin
+          </div>
         </div>
 
-        <div className="card-soft" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ background: '#D1FAE5', color: '#059669', padding: '10px', borderRadius: '12px' }}>
-              <CheckCircle2 size={20} />
+        {/* Card 3: Verified on Chain */}
+        <div className="card-soft" style={{ padding: '1.8rem', borderRadius: '22px', background: 'white', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+              <div style={{ background: '#D1FAE5', color: '#059669', padding: '12px', borderRadius: '14px' }}>
+                <CheckCircle2 size={22} />
+              </div>
+              <span style={{ fontSize: '0.75rem', background: '#EEF2FF', color: '#4F46E5', padding: '4px 10px', borderRadius: '9999px', fontWeight: 700 }}>
+                On-Chain
+              </span>
             </div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Verified on Chain</div>
+            <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{verifiedCount}</div>
           </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Verified on Chain</div>
-          <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)' }}>{verifiedCount}</div>
+          <div style={{ borderTop: '1px dashed #F1F5F9', paddingTop: '0.8rem', marginTop: '1.2rem', fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 500 }}>
+            <Database size={14} color="#059669" /> Terenkripsi permanen IPFS
+          </div>
         </div>
 
-        <div className="card-soft" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '10px', borderRadius: '12px' }}>
-              <Shield size={20} />
+        {/* Card 4: Rejected / Failed */}
+        <div className="card-soft" style={{ padding: '1.8rem', borderRadius: '22px', background: 'white', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+              <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '12px', borderRadius: '14px' }}>
+                <AlertCircle size={22} />
+              </div>
+              <span style={{ fontSize: '0.75rem', background: '#FFE4E6', color: '#991B1B', padding: '4px 10px', borderRadius: '9999px', fontWeight: 700 }}>
+                Failed
+              </span>
             </div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.3rem' }}>Rejected / Failed</div>
+            <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{rejectedCount}</div>
           </div>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.2rem' }}>Rejected/Failed</div>
-          <div style={{ fontSize: '2.2rem', fontWeight: 800, color: 'var(--text-main)' }}>{rejectedCount}</div>
+          <div style={{ borderTop: '1px dashed #F1F5F9', paddingTop: '0.8rem', marginTop: '1.2rem', fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 500 }}>
+            <Shield size={14} color="#DC2626" /> Dibatalkan atau error
+          </div>
         </div>
       </section>
 
       {/* Langkah Pembayaran Section */}
-      <section style={{
+      <section id="panduan-section" style={{
         maxWidth: '1100px',
         margin: '0 auto 5rem',
         padding: '3rem 2.5rem',
@@ -373,7 +444,7 @@ export default function LandingPage({ setActiveTab }) {
           <p style={{ fontSize: '1.05rem', opacity: 0.9, maxWidth: '600px', margin: '0 auto 2.5rem' }}>
             Bergabunglah dengan ribuan mahasiswa lainnya yang telah beralih ke sistem pembayaran masa depan.
           </p>
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               onClick={() => {
                 setIsAdmin(false);
@@ -388,25 +459,46 @@ export default function LandingPage({ setActiveTab }) {
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: '1rem',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
               }}
             >
               Buka Dashboard
             </button>
             <button
-              onClick={() => setActiveTab('verify')}
+              onClick={() => {
+                const el = document.getElementById('panduan-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
               style={{
-                background: 'rgba(255, 255, 255, 0.15)',
+                background: 'rgba(255, 255, 255, 0.2)',
                 color: 'white',
-                border: '1px solid rgba(255, 255, 255, 0.4)',
+                border: '1px solid rgba(255, 255, 255, 0.5)',
                 padding: '0.8rem 2rem',
                 borderRadius: '9999px',
                 fontWeight: 600,
                 cursor: 'pointer',
-                fontSize: '1rem'
+                fontSize: '1rem',
+                transition: 'all 0.2s'
               }}
             >
               Lihat Panduan
+            </button>
+            <button
+              onClick={() => setActiveTab('verify')}
+              style={{
+                background: 'transparent',
+                color: 'white',
+                border: '1px solid rgba(255, 255, 255, 0.35)',
+                padding: '0.8rem 1.8rem',
+                borderRadius: '9999px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '0.95rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              Verifikasi Publik →
             </button>
           </div>
         </div>

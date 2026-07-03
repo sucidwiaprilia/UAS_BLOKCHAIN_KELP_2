@@ -1,77 +1,120 @@
 import React from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { formatAddress } from '../utils/formatters';
-import { Bell, Wallet, ShieldCheck, UserCheck, Radio } from 'lucide-react';
+import { Bell, Wallet, ShieldCheck, UserCheck, Radio, Home, LayoutDashboard, ArrowLeft } from 'lucide-react';
 
 export default function Navbar({ activeTab, setActiveTab }) {
-  const { account, isAdmin, isDemoMode, loading, toggleRole, connectWallet } = useWeb3();
+  const { account, isAdmin, isAuthorizedAdmin, isDemoMode, loading, toggleRole, connectWallet } = useWeb3();
 
   return (
     <header style={{
       position: 'sticky',
       top: 0,
       zIndex: 50,
-      background: 'rgba(255, 255, 255, 0.9)',
-      backdropFilter: 'blur(12px)',
+      background: '#FFFFFF',
       borderBottom: '1px solid var(--border)',
+      boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
       padding: '0.8rem 2rem',
     }}>
       <div style={{
-        maxWidth: '1300px',
+        maxWidth: '1360px',
         margin: '0 auto',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '1rem'
       }}>
-        {/* Brand */}
-        <div
-          onClick={() => setActiveTab('landing')}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.6rem' }}
-        >
-          <div style={{
-            background: 'var(--primary)',
-            color: 'white',
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 'bold',
-            fontSize: '1.2rem',
-            boxShadow: '0 4px 10px rgba(79, 70, 229, 0.3)',
-          }}>
-            E
+        {/* Brand & Optional Back Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+          <div
+            onClick={() => setActiveTab('landing')}
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.6rem' }}
+          >
+            <div style={{
+              background: 'var(--primary)',
+              color: 'white',
+              width: '38px',
+              height: '38px',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: '800',
+              fontSize: '1.2rem',
+              boxShadow: '0 4px 10px rgba(79, 70, 229, 0.3)',
+            }}>
+              E
+            </div>
+            <span style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '-0.5px' }}>
+              EduPayChain
+            </span>
           </div>
-          <span style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '-0.5px' }}>
-            EduPayChain
-          </span>
+
+          {activeTab !== 'landing' && (
+            <button
+              onClick={() => setActiveTab('landing')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#F8FAFC',
+                border: '1px solid #CBD5E1',
+                color: '#334155',
+                padding: '0.45rem 1rem',
+                borderRadius: '9999px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              title="Kembali ke Halaman Utama"
+            >
+              <ArrowLeft size={14} /> Beranda
+            </button>
+          )}
         </div>
 
-        {/* Nav Links */}
-        <nav style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
+        {/* Modern Interactive Nav Pills */}
+        <nav style={{
+          display: 'flex',
+          background: '#F1F5F9',
+          padding: '4px',
+          borderRadius: '9999px',
+          border: '1px solid #E2E8F0',
+          gap: '4px'
+        }}>
           {[
-            { label: 'Dashboard', tab: isAdmin ? 'admin' : 'student', match: ['student', 'admin'] },
-            { label: 'Public Verification', tab: 'verify', match: ['verify'] },
-          ].map(({ label, tab, match }) => (
-            <button
-              key={label}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '0.95rem',
-                fontWeight: match.includes(activeTab) ? '600' : '400',
-                color: match.includes(activeTab) ? 'var(--primary)' : 'var(--text-secondary)',
-                borderBottom: match.includes(activeTab) ? '2px solid var(--primary)' : '2px solid transparent',
-                paddingBottom: '4px',
-                cursor: 'pointer',
-                transition: 'color 0.2s',
-              }}
-            >
-              {label}
-            </button>
-          ))}
+            { label: 'Beranda', tab: 'landing', icon: Home, match: ['landing'] },
+            { label: 'Dashboard', tab: isAdmin ? 'admin' : 'student', icon: LayoutDashboard, match: ['student', 'admin'] },
+            { label: 'Public Verification', tab: 'verify', icon: ShieldCheck, match: ['verify'] },
+          ].map(({ label, tab, icon: Icon, match }) => {
+            const isActive = match.includes(activeTab);
+            return (
+              <button
+                key={label}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  background: isActive ? 'white' : 'transparent',
+                  border: isActive ? '1px solid #CBD5E1' : '1px solid transparent',
+                  borderRadius: '9999px',
+                  padding: '0.45rem 1.2rem',
+                  fontSize: '0.88rem',
+                  fontWeight: isActive ? '700' : '600',
+                  color: isActive ? 'var(--primary)' : '#64748B',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.06)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                <Icon size={16} color={isActive ? 'var(--primary)' : '#64748B'} />
+                {label}
+              </button>
+            );
+          })}
         </nav>
 
         {/* Right Actions */}
@@ -104,16 +147,17 @@ export default function Navbar({ activeTab, setActiveTab }) {
               borderRadius: '9999px',
               fontSize: '0.75rem',
               fontWeight: '600',
-              cursor: 'pointer',
+              cursor: (!isDemoMode && account && !isAuthorizedAdmin) ? 'not-allowed' : 'pointer',
+              opacity: (!isDemoMode && account && !isAuthorizedAdmin) ? 0.7 : 1,
               display: 'flex',
               alignItems: 'center',
               gap: '0.4rem',
               transition: 'all 0.2s',
             }}
-            title="Klik untuk ganti portal (Mahasiswa / Admin)"
+            title={(!isDemoMode && account && !isAuthorizedAdmin) ? "Akses Admin Terkunci: Wallet bukan otorisasi Pihak Sekolah" : "Klik untuk ganti portal (Mahasiswa / Admin)"}
           >
             {isAdmin ? <ShieldCheck size={14} /> : <UserCheck size={14} />}
-            {isAdmin ? 'Admin' : 'Student'}
+            {isAdmin ? 'Admin Portal' : 'Student Portal'}
           </button>
 
           <button style={{

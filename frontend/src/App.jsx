@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { Web3Provider, useWeb3 } from './context/Web3Context';
 import Navbar from './components/Navbar';
-import LandingPage from './pages/LandingPage';
-import StudentPage from './pages/StudentPage';
-import AdminPage from './pages/AdminPage';
-import PublicVerifyPage from './pages/PublicVerifyPage';
 import { AlertTriangle, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+
+// Lazy loading pages untuk efisiensi bundle size & Clean Architecture
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const StudentPage = lazy(() => import('./pages/StudentPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const PublicVerifyPage = lazy(() => import('./pages/PublicVerifyPage'));
 
 // Global Toast Notification for on-chain TX status
 function TxToast() {
@@ -78,10 +80,16 @@ function AppContent() {
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main style={{ flex: 1 }}>
-        {activeTab === 'landing'  && <LandingPage setActiveTab={setActiveTab} />}
-        {activeTab === 'student'  && <StudentPage />}
-        {activeTab === 'admin'    && <AdminPage />}
-        {activeTab === 'verify'   && <PublicVerifyPage />}
+        <Suspense fallback={
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+            <Loader2 size={36} style={{ color: 'var(--primary)', animation: 'spin 1s linear infinite' }} />
+          </div>
+        }>
+          {activeTab === 'landing'  && <LandingPage setActiveTab={setActiveTab} />}
+          {activeTab === 'student'  && <StudentPage setActiveTab={setActiveTab} />}
+          {activeTab === 'admin'    && <AdminPage setActiveTab={setActiveTab} />}
+          {activeTab === 'verify'   && <PublicVerifyPage setActiveTab={setActiveTab} />}
+        </Suspense>
       </main>
 
       <footer style={{
