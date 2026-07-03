@@ -27,6 +27,33 @@
 
 ---
 
+## 🛠️ Teknologi & Tech Stack
+
+Proyek **EduPayChain** dibangun menggunakan kombinasi teknologi berstandar industri modern (*Enterprise & Web3 Grade*):
+
+### 1. 🌐 Blockchain & Smart Contract Layer
+- **Solidity (`v0.8.x`):** Bahasa pemrograman Smart Contract utama (`EduPayChain.sol`) yang mengimplementasikan *Role-Based Access Control (RBAC)*, struktur penyimpanan transaksi, dan pemancaran *event logs* on-chain.
+- **Ethereum Sepolia Testnet:** Jaringan uji coba Ethereum terdesentralisasi yang bertindak sebagai buku besar publik (*public ledger*) yang transparan dan *immutable*.
+- **Remix IDE & Hardhat Environment:** Tooling kompilasi, simulasi EVM, dan *deployment* Smart Contract.
+
+### 2. 💻 Frontend & UI/UX Layer
+- **React 19 (`v19.2.7`):** Library UI mutakhir berbasis komponen deklaratif untuk interaktivitas pengguna yang mulus.
+- **Vite 8 (`v8.1.1`):** *Build tool* generasi baru dengan *Hot Module Replacement (HMR)* super cepat dan optimasi *Code Splitting (`React.lazy` + `Suspense`)* berukuran bundel sangat ringan (<500 kB).
+- **Modern Vanilla CSS & Glassmorphism:** Sistem desain bergaya *premium aesthetic* dengan gradien indigo, efek kaca tembus pandang (*glass card*), dan desain sepenuhnya responsif.
+- **Lucide React (`v1.22.0`):** Pustaka ikon vektor bersudut halus dan profesional.
+- **Canvas Confetti (`v1.9.4`):** Pustaka *micro-animation* untuk memberikan *feedback* visual perayaan saat verifikasi pembayaran berhasil.
+
+### 3. 🔐 Web3 & Decentralized Infrastructure
+- **Ethers.js (`v6.17.0`):** Pustaka interaksi Web3 murni untuk menghubungkan aplikasi dengan dompet digital, melakukan penandatanganan transaksi (*tx signing*), dan membaca *state* dari Smart Contract.
+- **IPFS (InterPlanetary File System):** Penyimpanan berkas terdesentralisasi *peer-to-peer* (melalui gateway resmi `ipfs.io`) yang menjamin dokumen fisik slip pembayaran tidak akan pernah hilang atau bisa dipalsukan (*tamper-proof*).
+- **MetaMask Wallet:** Dompet kripto utama sebagai identitas kriptografis (*signer*) pengguna dan admin sekolah.
+
+### 4. 🧹 Code Quality & Engineering
+- **Oxlint (`v1.71.0`):** Linter berkecepatan tinggi berakselerasi Rust untuk menjaga standar *Clean Code* bebas *bug* dan *memory leak*.
+- **Clean Architecture Pattern:** Pemisahan lapisan modular yang tegas antara *Configuration Layer*, *Infrastructure Service Layer*, *Domain Layer*, dan *Presentation Layer*.
+
+---
+
 ## 🏗️ Arsitektur Proyek (*Clean Architecture*)
 
 Proyek ini dipisahkan menjadi lapisan modular yang bersih dan efisien:
